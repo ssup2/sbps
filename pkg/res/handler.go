@@ -30,13 +30,13 @@ type Handler struct {
 	rQuit chan struct{}
 	wQuit chan struct{}
 
+	isRunLock   *sync.RWMutex
 	wChanData   chan []byte
 	wChanResult chan *WriteResult
 	isRun       bool
-	isRunLock   *sync.RWMutex
 
-	wTargets     map[*Handler]struct{}
 	wTargetsLock *sync.Mutex
+	wTargets     map[*Handler]struct{}
 
 	closeNoti chan *Handler
 }
@@ -49,13 +49,13 @@ func NewHandler(res Res, closeNoti chan *Handler) *Handler {
 		rQuit: make(chan struct{}, 1),
 		wQuit: make(chan struct{}, 1),
 
+		isRunLock:   &sync.RWMutex{},
 		wChanData:   make(chan []byte),
 		wChanResult: make(chan *WriteResult),
 		isRun:       false,
-		isRunLock:   &sync.RWMutex{},
 
-		wTargets:     make(map[*Handler]struct{}),
 		wTargetsLock: &sync.Mutex{},
+		wTargets:     make(map[*Handler]struct{}),
 
 		closeNoti: closeNoti,
 	}

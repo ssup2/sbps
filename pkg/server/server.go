@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -17,23 +18,25 @@ type Server struct {
 
 	mQuit chan struct{}
 	lQuit chan struct{}
+	rQuit chan struct{}
 
+	resHLock     *sync.Mutex
+	sResInterval int
 	sResHs       map[*res.Handler]struct{}
 	sResClosedHs map[*res.Handler]struct{}
 	sResHNoti    chan *res.Handler
 	cResHs       map[*res.Handler]struct{}
 	cResHNoti    chan *res.Handler
-	resHLock     *sync.Mutex
 
-	isRun     bool
 	isRunLock *sync.Mutex
+	isRun     bool
 }
 
 // New allocates and initialize a server instance.
-func New(opt *string) (s *Server, err error) {
+func New(optMode *string, optInterval int) (s *Server, err error) {
 	log.Infof("Allocate a server")
 
-	opts := strings.Split(*opt, ":")
+	opts := strings.Split(*optMode, ":")
 	if len(opts) != 2 {
 		return nil, errors.New("Wrong server options")
 	}
@@ -49,16 +52,18 @@ func New(opt *string) (s *Server, err error) {
 
 		mQuit: make(chan struct{}, 1),
 		lQuit: make(chan struct{}, 1),
+		rQuit: make(chan struct{}, 1),
 
+		resHLock:     &sync.Mutex{},
+		sResInterval: optInterval,
 		sResHs:       make(map[*res.Handler]struct{}),
 		sResClosedHs: make(map[*res.Handler]struct{}),
 		sResHNoti:    make(chan *res.Handler, 1),
 		cResHs:       make(map[*res.Handler]struct{}),
 		cResHNoti:    make(chan *res.Handler, 1),
-		resHLock:     &sync.Mutex{},
 
-		isRun:     false,
 		isRunLock: &sync.Mutex{},
+		isRun:     false,
 	}, nil
 }
 
@@ -69,14 +74,18 @@ func (s *Server) Close() {
 	if s.isRun == true {
 		s.lQuit <- struct{}{}
 		s.mQuit <- struct{}{}
+		s.rQuit <- struct{}{}
 		close(s.lQuit)
 		close(s.mQuit)
+		close(s.rQuit)
 	}
 	s.isRun = false
 	s.isRunLock.Unlock()
 
 	// Deinit
-	s.ticker.Stop()
+	if s.sResInterval > 0 {
+		s.ticker.Stop()
+	}
 
 	// Close server, client resource handlers
 	s.resHLock.Lock()
@@ -252,11 +261,17 @@ func (s *Server) Run() {
 	s.isRunLock.Lock()
 	defer s.isRunLock.Unlock()
 
+	// Check
+	if len(s.sResHs) <= 0 {
+		log.Infof("Run failed - All server resources is closed")
+		os.Exit(1)
+	}
+
+	// Check running
 	if s.isRun == true {
 		return
 	}
 	s.isRun = true
-	s.ticker = time.NewTicker(time.Second * 2)
 
 	// Main goroutine
 	go func() {
@@ -266,13 +281,18 @@ func (s *Server) Run() {
 				return
 
 			case sResH := <-s.sResHNoti:
-				s.AddSResClosedHandler(sResH)
+				if s.sResInterval > 0 {
+					s.AddSResClosedHandler(sResH)
+				} else {
+					s.RemoveSResHandler(sResH)
+					if len(s.sResHs) <= 0 {
+						log.Infof("All server resources is closed")
+						os.Exit(0)
+					}
+				}
 
 			case cResH := <-s.cResHNoti:
 				s.RemoveCResHandler(cResH)
-
-			case <-s.ticker.C:
-				s.ReopenSResH()
 			}
 		}
 	}()
@@ -289,6 +309,23 @@ func (s *Server) Run() {
 			}
 		}
 	}()
+
+	// Retry goroutine
+	if s.sResInterval > 0 {
+		s.ticker = time.NewTicker(time.Second * time.Duration(s.sResInterval))
+
+		go func() {
+			for {
+				select {
+				case <-s.rQuit:
+					return
+
+				case <-s.ticker.C:
+					s.ReopenSResH()
+				}
+			}
+		}()
+	}
 }
 
 // Stop stops the server.
