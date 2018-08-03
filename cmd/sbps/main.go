@@ -20,24 +20,33 @@ var (
 
 // SResOpt represents a pair of server resource option
 type SResOpt struct {
-	sResType string
-	sResLoc  string
+	sResType  *string
+	sResInfo1 *string
+	sResInfo2 *string
 }
 
-// CheckSRes checks server resource option
-func CheckSRes(optSResLoc *string) *[]*SResOpt {
+// SplitSRes splits server resource option
+func SplitSRes(optSResLoc *string) *[]*SResOpt {
 	var sRess []*SResOpt
 
 	for _, sRes := range strings.Split(*optSResLoc, ",") {
-		resSplit := strings.Split(sRes, ":")
-		if len(resSplit) != 2 {
+		rSplit := strings.Split(sRes, ":")
+		length := len(rSplit)
+
+		if length < 2 || length > 3 {
 			log.Critf("Wrong server resource option - %s", sRes)
 			os.Exit(1)
 		}
 
-		resType := resSplit[0]
-		resLoc := resSplit[1]
-		sRess = append(sRess, &SResOpt{sResType: resType, sResLoc: resLoc})
+		rType := &rSplit[0]
+		rInfo1 := &rSplit[1]
+		rInfo2 := (*string)(nil)
+		if length == 3 {
+			rInfo2 = &rSplit[2]
+		}
+
+		sRess = append(sRess, &SResOpt{sResType: rType, sResInfo1: rInfo1,
+			sResInfo2: rInfo2})
 	}
 
 	return &sRess
@@ -45,13 +54,18 @@ func CheckSRes(optSResLoc *string) *[]*SResOpt {
 
 func main() {
 	// Options
-	optVersion := flag.Bool("v", false, "Print version")
-
-	optMode := flag.String("mode", server.TypeTCP+":6060", "sbps mode (option TCP:port, UDP:port, UNIX:path)")
-	optSResLoc := flag.String("resource", "", "Server resource list (option TCP:ip:port, UDP:ip:port, UNIX:path, PIPE:path)")
-	optSResInter := flag.Int("interval", 2, "Retry interval for closed server resources (sec)")
-	optLogPath := flag.String("logpath", "sbsp_log", "Log path")
-	optLogLevel := flag.String("loglevel", "INFO", "Log level (option DEBUG, INFO, WARN, ERROR, CRIT)")
+	optVersion := flag.Bool("v", false,
+		"Print version")
+	optMode := flag.String("mode", server.TypeTCP+":6060",
+		"sbps mode (option TCP:port, UDP:port, UNIX:path)")
+	optSResLoc := flag.String("resource", "",
+		"Server resource list (option TCP:ip:port, UDP:ip:port, UNIX:path, PIPE:path)")
+	optSResInter := flag.Int("interval", 2,
+		"Retry interval for closed server resources (sec)")
+	optLogPath := flag.String("logpath", "sbsp_log",
+		"Log path")
+	optLogLevel := flag.String("loglevel", "INFO",
+		"Log level (option DEBUG, INFO, WARN, ERROR, CRIT)")
 	flag.Parse()
 
 	if *optVersion {
@@ -80,12 +94,19 @@ func main() {
 	}
 	defer server.Close()
 
-	sRess := CheckSRes(optSResLoc)
+	sRess := SplitSRes(optSResLoc)
 	for _, sRes := range *sRess {
-		r := res.New(sRes.sResType, sRes.sResLoc)
-		if r == nil {
-			log.Error("Allocation a server resource error - %s:%s", sRes.sResLoc, sRes.sResLoc)
-			continue
+		r, resError := res.New(sRes.sResType, sRes.sResInfo1, sRes.sResInfo2)
+		if resError != nil {
+			if sRes.sResInfo2 == nil {
+				log.Errorf("Allocation a server resource (%s:%s) error - %s",
+					*sRes.sResType, *sRes.sResInfo1, resError.Error())
+				continue
+			} else {
+				log.Errorf("Allocation a server resource (%s:%s:%s) error - %s",
+					*sRes.sResType, *sRes.sResInfo1, *sRes.sResInfo2, resError.Error())
+				continue
+			}
 		}
 
 		h := res.NewHandler(r, server.GetSResHNoti())

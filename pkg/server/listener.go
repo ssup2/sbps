@@ -15,7 +15,7 @@ const (
 
 // Listener represents listener infomation
 type Listener struct {
-	l net.Listener
+	ln net.Listener
 
 	lType string
 	lOpt  string
@@ -23,22 +23,22 @@ type Listener struct {
 
 // NewListener allocates and initialize a listener instance
 // depends on listener type.
-func NewListener(lType *string, lOpt *string) (l *Listener, err error) {
-	var listener net.Listener
+func NewListener(lType *string, lOpt *string) (*Listener, error) {
+	var ln net.Listener
+	var err error
 
 	switch *lType {
 	case TypeTCP:
-		ln, err := net.Listen("tcp", fmt.Sprintf(":%s", *lOpt))
-		if err != nil {
-			return nil, err
-		}
-		listener = ln
-		break
-	case TypeUDP:
-		break
+		ln, err = net.Listen("tcp", fmt.Sprintf(":%s", *lOpt))
+	case TypeUnix:
+		ln, err = net.Listen("unix", *lOpt)
 	default:
 		return nil, errors.New("Wrong listener type")
 	}
 
-	return &Listener{l: listener, lType: *lType, lOpt: *lOpt}, nil
+	if err != nil {
+		return nil, err
+	}
+
+	return &Listener{ln: ln, lType: *lType, lOpt: *lOpt}, nil
 }

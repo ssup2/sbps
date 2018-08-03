@@ -13,8 +13,8 @@ import (
 
 // Server manages a server resource handler and a listen goroutine.
 type Server struct {
-	listener *Listener
-	ticker   *time.Ticker
+	ln     *Listener
+	ticker *time.Ticker
 
 	mQuit chan struct{}
 	lQuit chan struct{}
@@ -33,7 +33,7 @@ type Server struct {
 }
 
 // New allocates and initialize a server instance.
-func New(optMode *string, optInterval int) (s *Server, err error) {
+func New(optMode *string, optInterval int) (*Server, error) {
 	log.Infof("Allocate a server")
 
 	opts := strings.Split(*optMode, ":")
@@ -41,14 +41,14 @@ func New(optMode *string, optInterval int) (s *Server, err error) {
 		return nil, errors.New("Wrong server options")
 	}
 
-	listener, err := NewListener(&opts[0], &opts[1])
+	ln, err := NewListener(&opts[0], &opts[1])
 	if err != nil {
 		return nil, err
 	}
 
 	return &Server{
-		listener: listener,
-		ticker:   nil,
+		ln:     ln,
+		ticker: nil,
 
 		mQuit: make(chan struct{}, 1),
 		lQuit: make(chan struct{}, 1),
@@ -83,6 +83,7 @@ func (s *Server) Close() {
 	s.isRunLock.Unlock()
 
 	// Deinit
+	s.ln.ln.Close()
 	if s.sResInterval > 0 {
 		s.ticker.Stop()
 	}
@@ -234,7 +235,7 @@ func (s *Server) ReopenSResH() {
 
 // AcceptCResH accept clients to commuicate SResHs
 func (s *Server) AcceptCResH() {
-	conn, err := s.listener.l.Accept()
+	conn, err := s.ln.ln.Accept()
 	if err != nil {
 		if s.isRun == false {
 			log.Infof("Accept client failed - Close listener")
@@ -245,7 +246,9 @@ func (s *Server) AcceptCResH() {
 	}
 
 	log.Infof("Accept the new client")
-	cResH := res.NewHandler(res.New(res.TypeConn, conn), s.cResHNoti)
+	typeConn := res.TypeConn
+	cRes, _ := res.New(&typeConn, &conn, nil)
+	cResH := res.NewHandler(cRes, s.cResHNoti)
 	s.AddCResHandler(cResH)
 	cResH.Run()
 }
@@ -341,8 +344,4 @@ func (s *Server) Stop() {
 	s.mQuit <- struct{}{}
 	s.lQuit <- struct{}{}
 	s.isRun = false
-
-	// Close for stop listen goroutine
-	// TODO remove this
-	s.listener.l.Close()
 }
