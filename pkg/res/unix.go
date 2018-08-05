@@ -68,7 +68,7 @@ func (res *Unix) IsOpen() bool {
 
 // GetInfo get unix resource's info.
 func (res *Unix) GetInfo() *string {
-	tmp := fmt.Sprintf("%s:%s", TypeUDP, res.path)
+	tmp := fmt.Sprintf("%s:%s", TypeUnix, res.path)
 	return &tmp
 }
 

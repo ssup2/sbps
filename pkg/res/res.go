@@ -13,7 +13,7 @@ const (
 	TypeUDP  = "UDP"
 	TypeUnix = "UNIX"
 	TypeConn = "CONN"
-	TypePipe = "PIPE"
+	TypeFIFO = "FIFO"
 )
 
 // ErrType is error instance for wrong resource type.
@@ -60,7 +60,8 @@ func New(rType *string, rInfo1 interface{}, rInfo2 interface{}) (Res, error) {
 		return NewUnix(rInfo1.(*string)), nil
 	case TypeConn:
 		return NewConn(rInfo1.(*net.Conn)), nil
-	case TypePipe:
+	case TypeFIFO:
+		return NewFIFO(rInfo1.(*string)), nil
 	default:
 	}
 
@@ -74,7 +75,7 @@ func CheckType(rType string) bool {
 	case TypeUDP:
 	case TypeUnix:
 	case TypeConn:
-	case TypePipe:
+	case TypeFIFO:
 		return true
 	default:
 	}

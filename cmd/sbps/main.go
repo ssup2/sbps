@@ -57,11 +57,11 @@ func main() {
 	optVersion := flag.Bool("v", false,
 		"Print version")
 	optMode := flag.String("mode", server.TypeTCP+":6060",
-		"sbps mode (option TCP:port, UDP:port, UNIX:path)")
+		"sbps mode (option TCP:port, UNIX:path)")
 	optSResLoc := flag.String("resource", "",
-		"Server resource list (option TCP:ip:port, UDP:ip:port, UNIX:path, PIPE:path)")
+		"Server resource list (option TCP:ip:port, UDP:ip:port, UNIX:path, PIPO:path)")
 	optSResInter := flag.Int("interval", 2,
-		"Retry interval for closed server resources (sec)")
+		"Seconds of Retry interval for closed server resources")
 	optLogPath := flag.String("logpath", "sbsp_log",
 		"Log path")
 	optLogLevel := flag.String("loglevel", "INFO",

@@ -60,9 +60,6 @@ func (res *Conn) GetInfo() *string {
 	if strings.Contains(p, "tcp") {
 		addr := res.conn.RemoteAddr().(*net.TCPAddr)
 		tmp = fmt.Sprintf("%s:%s:%s:%d", TypeConn, "TCP", addr.IP.String(), addr.Port)
-	} else if strings.Contains(p, "udp") {
-		addr := res.conn.RemoteAddr().(*net.UDPAddr)
-		tmp = fmt.Sprintf("%s:%s:%s:%d", TypeConn, "UDP", addr.IP.String(), addr.Port)
 	} else if strings.Contains(p, "unix") {
 		addr := res.conn.RemoteAddr().(*net.UnixAddr)
 		tmp = fmt.Sprintf("%s:%s:%s", TypeConn, "UNIX", addr.String())
