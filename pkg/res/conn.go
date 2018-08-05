@@ -10,19 +10,19 @@ import (
 
 // Conn represents a connection from a client.
 type Conn struct {
-	isOpen     bool
-	isOpenLock *sync.Mutex
-
 	conn net.Conn
+
+	isOpenLock *sync.Mutex
+	isOpen     bool
 }
 
 // NewConn allocates and initializes a conn instance.
 func NewConn(conn *net.Conn) *Conn {
 	return &Conn{
-		isOpen:     true,
-		isOpenLock: &sync.Mutex{},
-
 		conn: *conn,
+
+		isOpenLock: &sync.Mutex{},
+		isOpen:     true,
 	}
 }
 
@@ -42,14 +42,6 @@ func (res *Conn) Close() error {
 
 	res.isOpen = false
 	return res.conn.Close()
-}
-
-// IsOpen Checks open of the resource.
-func (res *Conn) IsOpen() bool {
-	res.isOpenLock.Lock()
-	defer res.isOpenLock.Unlock()
-
-	return res.isOpen
 }
 
 // GetInfo get conn resource's info
@@ -76,4 +68,22 @@ func (res *Conn) Read(b []byte) (n int, err error) {
 
 func (res *Conn) Write(b []byte) (n int, err error) {
 	return res.conn.Write(b)
+}
+
+// IsOpen checks open of the resource.
+func (res *Conn) IsOpen() bool {
+	res.isOpenLock.Lock()
+	defer res.isOpenLock.Unlock()
+
+	return res.isOpen
+}
+
+// IsRable checks resource is readable.
+func (res *Conn) IsRable() bool {
+	return true
+}
+
+// IsWable check resource is writeable
+func (res *Conn) IsWable() bool {
+	return true
 }

@@ -8,23 +8,27 @@ import (
 
 // TCP represents a TCP socket.
 type TCP struct {
-	isOpen     bool
-	isOpenLock *sync.Mutex
-
+	conn net.Conn
 	ip   string
 	port int
-	conn net.Conn
+
+	isOpenLock *sync.Mutex
+	isOpen     bool
+
+	mode byte
 }
 
 // NewTCP allocates and initializes a TCP instance.
-func NewTCP(ip *string, port int) *TCP {
+func NewTCP(ip *string, port int, mode byte) *TCP {
 	return &TCP{
-		isOpen:     false,
-		isOpenLock: &sync.Mutex{},
-
+		conn: nil,
 		ip:   *ip,
 		port: port,
-		conn: nil,
+
+		isOpenLock: &sync.Mutex{},
+		isOpen:     false,
+
+		mode: mode,
 	}
 }
 
@@ -60,14 +64,6 @@ func (res *TCP) Close() error {
 	return res.conn.Close()
 }
 
-// IsOpen Checks open of the resource.
-func (res *TCP) IsOpen() bool {
-	res.isOpenLock.Lock()
-	defer res.isOpenLock.Unlock()
-
-	return res.isOpen
-}
-
 // GetInfo get tcp resource's info.
 func (res *TCP) GetInfo() *string {
 	tmp := fmt.Sprintf("%s:%s:%d", TypeTCP, res.ip, res.port)
@@ -80,4 +76,30 @@ func (res *TCP) Read(b []byte) (n int, err error) {
 
 func (res *TCP) Write(b []byte) (n int, err error) {
 	return res.conn.Write(b)
+}
+
+// IsOpen checks open of the resource.
+func (res *TCP) IsOpen() bool {
+	res.isOpenLock.Lock()
+	defer res.isOpenLock.Unlock()
+
+	return res.isOpen
+}
+
+// IsRable checks resource is readable.
+func (res *TCP) IsRable() bool {
+	if res.mode&(1<<ModeR) == (1 << ModeR) {
+		return true
+	} else {
+		return false
+	}
+}
+
+// IsWable check resource is writeable
+func (res *TCP) IsWable() bool {
+	if res.mode&(1<<ModeW) == (1 << ModeW) {
+		return true
+	} else {
+		return false
+	}
 }

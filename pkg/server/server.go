@@ -246,9 +246,7 @@ func (s *Server) AcceptCResH() {
 	}
 
 	log.Infof("Accept the new client")
-	typeConn := res.TypeConn
-	cRes, _ := res.New(&typeConn, &conn, nil)
-	cResH := res.NewHandler(cRes, s.cResHNoti)
+	cResH := res.NewHandler(res.NewConn(&conn), s.cResHNoti)
 	s.AddCResHandler(cResH)
 	cResH.Run()
 }

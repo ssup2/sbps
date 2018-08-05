@@ -20,9 +20,8 @@ var (
 
 // SResOpt represents a pair of server resource option
 type SResOpt struct {
-	sResType  *string
-	sResInfo1 *string
-	sResInfo2 *string
+	sResType string
+	sResInfo []string
 }
 
 // SplitSRes splits server resource option
@@ -33,20 +32,14 @@ func SplitSRes(optSResLoc *string) *[]*SResOpt {
 		rSplit := strings.Split(sRes, ":")
 		length := len(rSplit)
 
-		if length < 2 || length > 3 {
+		if length < 2 || length > 4 {
 			log.Critf("Wrong server resource option - %s", sRes)
 			os.Exit(1)
 		}
 
-		rType := &rSplit[0]
-		rInfo1 := &rSplit[1]
-		rInfo2 := (*string)(nil)
-		if length == 3 {
-			rInfo2 = &rSplit[2]
-		}
-
-		sRess = append(sRess, &SResOpt{sResType: rType, sResInfo1: rInfo1,
-			sResInfo2: rInfo2})
+		rType := rSplit[0]
+		rInfo := append(rSplit[:0], rSplit[1:]...)
+		sRess = append(sRess, &SResOpt{sResType: rType, sResInfo: rInfo})
 	}
 
 	return &sRess
@@ -59,7 +52,7 @@ func main() {
 	optMode := flag.String("mode", server.TypeTCP+":6060",
 		"sbps mode (option TCP:port, UNIX:path)")
 	optSResLoc := flag.String("resource", "",
-		"Server resource list (option TCP:ip:port, UDP:ip:port, UNIX:path, PIPO:path)")
+		"Server resource list (option TCP:ip:port[:RW], UDP:ip:port[:RW], UNIX:path[:RW], FIFO:path[:RW])")
 	optSResInter := flag.Int("interval", 2,
 		"Seconds of Retry interval for closed server resources")
 	optLogPath := flag.String("logpath", "sbsp_log",
@@ -96,17 +89,16 @@ func main() {
 
 	sRess := SplitSRes(optSResLoc)
 	for _, sRes := range *sRess {
-		r, resError := res.New(sRes.sResType, sRes.sResInfo1, sRes.sResInfo2)
+		r, resError := res.New(&sRes.sResType, sRes.sResInfo)
 		if resError != nil {
-			if sRes.sResInfo2 == nil {
-				log.Errorf("Allocation a server resource (%s:%s) error - %s",
-					*sRes.sResType, *sRes.sResInfo1, resError.Error())
-				continue
-			} else {
-				log.Errorf("Allocation a server resource (%s:%s:%s) error - %s",
-					*sRes.sResType, *sRes.sResInfo1, *sRes.sResInfo2, resError.Error())
-				continue
+			resStr := sRes.sResType
+			for _, info := range sRes.sResInfo {
+				resStr += (":" + info)
 			}
+
+			log.Critf("Allocation a server resource (%s) error - %s",
+				resStr, resError.Error())
+			os.Exit(1)
 		}
 
 		h := res.NewHandler(r, server.GetSResHNoti())

@@ -8,23 +8,27 @@ import (
 
 // UDP represents a UDP socket.
 type UDP struct {
-	isOpen     bool
-	isOpenLock *sync.Mutex
-
+	conn net.Conn
 	ip   string
 	port int
-	conn net.Conn
+
+	isOpenLock *sync.Mutex
+	isOpen     bool
+
+	mode byte
 }
 
 // NewUDP allocates and initializes a UDP instance.
-func NewUDP(ip *string, port int) *UDP {
+func NewUDP(ip *string, port int, mode byte) *UDP {
 	return &UDP{
-		isOpen:     false,
-		isOpenLock: &sync.Mutex{},
-
+		conn: nil,
 		ip:   *ip,
 		port: port,
-		conn: nil,
+
+		isOpenLock: &sync.Mutex{},
+		isOpen:     false,
+
+		mode: mode,
 	}
 }
 
@@ -60,14 +64,6 @@ func (res *UDP) Close() error {
 	return res.conn.Close()
 }
 
-// IsOpen Checks open of the resource.
-func (res *UDP) IsOpen() bool {
-	res.isOpenLock.Lock()
-	defer res.isOpenLock.Unlock()
-
-	return res.isOpen
-}
-
 // GetInfo get udp resource's info.
 func (res *UDP) GetInfo() *string {
 	tmp := fmt.Sprintf("%s:%s:%d", TypeUDP, res.ip, res.port)
@@ -80,4 +76,30 @@ func (res *UDP) Read(b []byte) (n int, err error) {
 
 func (res *UDP) Write(b []byte) (n int, err error) {
 	return res.conn.Write(b)
+}
+
+// IsOpen checks open of the resource.
+func (res *UDP) IsOpen() bool {
+	res.isOpenLock.Lock()
+	defer res.isOpenLock.Unlock()
+
+	return res.isOpen
+}
+
+// IsRable checks resource is readable.
+func (res *UDP) IsRable() bool {
+	if res.mode&(1<<ModeR) == (1 << ModeR) {
+		return true
+	} else {
+		return false
+	}
+}
+
+// IsWable check resource is writeable
+func (res *UDP) IsWable() bool {
+	if res.mode&(1<<ModeW) == (1 << ModeW) {
+		return true
+	} else {
+		return false
+	}
 }

@@ -125,6 +125,10 @@ func (h *Handler) Write(b []byte) (n int, err error) {
 		return 0, ErrNR
 	}
 
+	if !h.res.IsWable() {
+		return 0, nil
+	}
+
 	h.wChanData <- b
 	result := <-h.wChanResult
 	return (*result).n, *(*result).err
@@ -142,84 +146,88 @@ func (h *Handler) Run() {
 	h.isRun = true
 
 	// Read goroutine
-	go func() {
-		for {
-			select {
-			case <-h.rQuit:
-				log.Infof("Res handler - %s - read goroutine - close",
-					*h.res.GetInfo())
-				return
+	if h.res.IsRable() {
+		go func() {
+			for {
+				select {
+				case <-h.rQuit:
+					log.Infof("Res handler - %s - read goroutine - close",
+						*h.res.GetInfo())
+					return
 
-			default:
-				// Read from resource
-				b := make([]byte, ReadBufSize)
-				n, err := h.res.Read(b)
-				if err != nil {
-					if err == io.EOF {
-						// Resource (connection) is closed
-						log.Infof("Res handler - %s - resource is closed",
-							*h.res.GetInfo())
-						h.res.Close()
-						h.Stop()
-
-						// Send close event
-						if h.closeNoti != nil {
-							h.closeNoti <- h
-						}
-					} else {
-						// Error
-						log.Errorf("Res handler - %s - read goroutine - "+
-							"read from resource error - %s",
-							*h.res.GetInfo(), err.Error())
-					}
-					continue
-				}
-
-				// Write to all write targets
-				for target := range h.wTargets {
-					_, err := target.Write(b[:n])
+				default:
+					// Read from resource
+					b := make([]byte, ReadBufSize)
+					n, err := h.res.Read(b)
 					if err != nil {
-						if err == ErrNR {
-							log.Infof("Res handler - %s - write target (%s) is closed",
-								*h.res.GetInfo(), *target.res.GetInfo())
-							h.RemoveWriteTarget(target)
+						if err == io.EOF {
+							// Resource (connection) is closed
+							log.Infof("Res handler - %s - resource is closed",
+								*h.res.GetInfo())
+							h.res.Close()
+							h.Stop()
+
+							// Send close event
+							if h.closeNoti != nil {
+								h.closeNoti <- h
+							}
 						} else {
+							// Error
 							log.Errorf("Res handler - %s - read goroutine - "+
-								"write to write target error - %s",
+								"read from resource error - %s",
 								*h.res.GetInfo(), err.Error())
 						}
+						continue
+					}
+
+					// Write to all write targets
+					for target := range h.wTargets {
+						_, err := target.Write(b[:n])
+						if err != nil {
+							if err == ErrNR {
+								log.Infof("Res handler - %s - write target (%s) is closed",
+									*h.res.GetInfo(), *target.res.GetInfo())
+								h.RemoveWriteTarget(target)
+							} else {
+								log.Errorf("Res handler - %s - read goroutine - "+
+									"write to write target error - %s",
+									*h.res.GetInfo(), err.Error())
+							}
+						}
 					}
 				}
 			}
-		}
-	}()
+		}()
+	}
 
 	// Write goroutine
-	go func() {
-		for {
-			select {
-			case <-h.wQuit:
-				log.Infof("Res handler - %s - write goroutine - close",
-					*h.res.GetInfo())
-				return
+	if h.res.IsWable() {
+		go func() {
+			for {
+				select {
+				case <-h.wQuit:
+					log.Infof("Res handler - %s - write goroutine - close",
+						*h.res.GetInfo())
+					return
 
-			case data := <-h.wChanData:
-				// Write to resource
-				n, err := h.res.Write(data)
-				if err != nil {
-					log.Errorf("Res handler - %s - write goroutine - "+
-						"write to resource error - %s",
-						*h.res.GetInfo(), err.Error())
-				} else if n != len(data) {
-					log.Errorf("Res handler - %s - write goroutine - "+
-						"size of write is diff - request %d - result %d",
-						*h.res.GetInfo(), len(data), n)
+				case data := <-h.wChanData:
+					// Write to resource
+					n, err := h.res.Write(data)
+					if err != nil {
+						log.Errorf("Res handler - %s - write goroutine - "+
+							"write to resource error - %s",
+							*h.res.GetInfo(), err.Error())
+					} else if n != len(data) {
+						log.Errorf("Res handler - %s - write goroutine - "+
+							"size of write is diff - request %d - result %d",
+							*h.res.GetInfo(), len(data), n)
+					}
+
+					h.wChanResult <- &WriteResult{n: n, err: &err}
 				}
-
-				h.wChanResult <- &WriteResult{n: n, err: &err}
 			}
-		}
-	}()
+		}()
+	}
 }
 
 // Stop stops the handler.

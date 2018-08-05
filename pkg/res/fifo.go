@@ -8,21 +8,25 @@ import (
 
 // FIFO represents a FIFO (Named pipe).
 type FIFO struct {
-	isOpen     bool
-	isOpenLock *sync.Mutex
-
-	path string
 	fp   *os.File
+	path string
+
+	isOpenLock *sync.Mutex
+	isOpen     bool
+
+	mode byte
 }
 
 // NewFIFO allocates and initializes a FIFO instance.
-func NewFIFO(path *string) *FIFO {
+func NewFIFO(path *string, mode byte) *FIFO {
 	return &FIFO{
-		isOpen:     false,
-		isOpenLock: &sync.Mutex{},
-
-		path: *path,
 		fp:   nil,
+		path: *path,
+
+		isOpenLock: &sync.Mutex{},
+		isOpen:     false,
+
+		mode: mode,
 	}
 }
 
@@ -58,14 +62,6 @@ func (res *FIFO) Close() error {
 	return res.fp.Close()
 }
 
-// IsOpen Checks open of the resource.
-func (res *FIFO) IsOpen() bool {
-	res.isOpenLock.Lock()
-	defer res.isOpenLock.Unlock()
-
-	return res.isOpen
-}
-
 // GetInfo get tcp resource's info.
 func (res *FIFO) GetInfo() *string {
 	tmp := fmt.Sprintf("%s:%s", TypeFIFO, res.path)
@@ -78,4 +74,30 @@ func (res *FIFO) Read(b []byte) (n int, err error) {
 
 func (res *FIFO) Write(b []byte) (n int, err error) {
 	return res.fp.Write(b)
+}
+
+// IsOpen checks open of the resource.
+func (res *FIFO) IsOpen() bool {
+	res.isOpenLock.Lock()
+	defer res.isOpenLock.Unlock()
+
+	return res.isOpen
+}
+
+// IsRable checks resource is readable.
+func (res *FIFO) IsRable() bool {
+	if res.mode&(1<<ModeR) == (1 << ModeR) {
+		return true
+	} else {
+		return false
+	}
+}
+
+// IsWable check resource is writeable
+func (res *FIFO) IsWable() bool {
+	if res.mode&(1<<ModeW) == (1 << ModeW) {
+		return true
+	} else {
+		return false
+	}
 }
