@@ -55,7 +55,7 @@ func main() {
 		"Server resources (option TCP:ip:port[:RW], UDP:ip:port[:RW], UNIX:path[:RW], FIFO:path[:RW])")
 	optSResInter := flag.Int("interval", 2,
 		"Seconds of retry interval for closed server resources")
-	optLogPath := flag.String("logpath", "sbsp_log",
+	optLogPath := flag.String("logpath", "./sbps.log",
 		"Log path")
 	optLogLevel := flag.String("loglevel", "INFO",
 		"Log level (option DEBUG, INFO, WARN, ERROR, CRIT)")

@@ -20,7 +20,7 @@ Set server resources. sbps support TCP, UDP, UNIX, FIFO (Named Pipe) types serve
 
 Set seconds of retry interval seconds for closed server resources. If the interval is less than or equal to 0, sbps do not retry for closed server resources. And if All server resources is closed, sbps stops.
 
-#### -logpath (Default "./sbps_log")
+#### -logpath (Default "./sbps.log")
 
 Set log path.
 
