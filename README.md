@@ -8,7 +8,7 @@ A server resource represents a server or a resource that sbps could read from or
 
 ## Options
 
-#### -mode (TCP:port, UNIX:path) (default TCP:6060)
+#### -mode (Option TCP:port, UNIX:path) (Default TCP:6060)
 
 Set sbps proxy server mode. sbps could run as a TCP proxy server or a UNIX proxy server.
 
