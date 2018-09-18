@@ -88,16 +88,14 @@ func (res *FIFO) IsOpen() bool {
 func (res *FIFO) IsRable() bool {
 	if res.mode&(1<<ModeR) == (1 << ModeR) {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
 
 // IsWable check resource is writeable
 func (res *FIFO) IsWable() bool {
 	if res.mode&(1<<ModeW) == (1 << ModeW) {
 		return true
-	} else {
-		return false
 	}
+	return false
 }

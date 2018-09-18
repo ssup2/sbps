@@ -13,6 +13,7 @@ import (
 	"github.com/ssup2/sbps/pkg/server"
 )
 
+// Version, Build info for sbps and cmake
 var (
 	Version string
 	Build   string

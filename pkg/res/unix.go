@@ -88,16 +88,14 @@ func (res *Unix) IsOpen() bool {
 func (res *Unix) IsRable() bool {
 	if res.mode&(1<<ModeR) == (1 << ModeR) {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
 
 // IsWable check resource is writeable
 func (res *Unix) IsWable() bool {
 	if res.mode&(1<<ModeW) == (1 << ModeW) {
 		return true
-	} else {
-		return false
 	}
+	return false
 }

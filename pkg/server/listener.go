@@ -13,7 +13,7 @@ const (
 	TypeUnix = "UNIX"
 )
 
-// Listener represents listener infomation
+// Listener represents listener information
 type Listener struct {
 	ln net.Listener
 

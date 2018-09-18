@@ -73,9 +73,8 @@ func New(rType *string, rInfo []string) (Res, error) {
 		// Allocate a resource
 		if strings.Compare(TypeTCP, *rType) == 0 {
 			return NewTCP(&ip, port, mode), nil
-		} else {
-			return NewUDP(&ip, port, mode), nil
 		}
+		return NewUDP(&ip, port, mode), nil
 
 	case TypeUnix, TypeFIFO:
 		// Check rInfo
@@ -95,9 +94,8 @@ func New(rType *string, rInfo []string) (Res, error) {
 		// Allocate a resource
 		if strings.Compare(TypeUnix, *rType) == 0 {
 			return NewUnix(&path, mode), nil
-		} else {
-			return NewFIFO(&path, mode), nil
 		}
+		return NewFIFO(&path, mode), nil
 
 	default:
 	}
@@ -129,7 +127,6 @@ func MapMode(rType *string) (byte, error) {
 		return (byte)(1 << ModeR), nil
 	} else if strings.Compare("W", *rType) == 0 {
 		return (byte)(1 << ModeW), nil
-	} else {
-		return 0, errors.New("Wrong mode")
 	}
+	return 0, errors.New("Wrong mode")
 }

@@ -133,7 +133,7 @@ func Debugln(v ...interface{}) {
 	log.logDebug.Output(2, fmt.Sprint(v...))
 }
 
-// Infof works the same as printf with infomation prefix
+// Infof works the same as printf with information prefix
 func Infof(format string, v ...interface{}) {
 	if log.level > LevelInfo {
 		return
@@ -142,7 +142,7 @@ func Infof(format string, v ...interface{}) {
 	log.logInfo.Output(2, fmt.Sprintf(format, v...))
 }
 
-// Info works the same as print with infomation prefix
+// Info works the same as print with information prefix
 func Info(v ...interface{}) {
 	if log.level > LevelInfo {
 		return
@@ -151,7 +151,7 @@ func Info(v ...interface{}) {
 	log.logInfo.Output(2, fmt.Sprint(v...))
 }
 
-// Infoln works the same as println with infomation prefix
+// Infoln works the same as println with information prefix
 func Infoln(v ...interface{}) {
 	if log.level > LevelInfo {
 		return

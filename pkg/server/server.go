@@ -251,7 +251,7 @@ func (s *Server) AcceptCResH() {
 	cResH.Run()
 }
 
-// SResH noti channel
+// GetSResHNoti noti channel
 func (s *Server) GetSResHNoti() chan *res.Handler {
 	return s.sResHNoti
 }

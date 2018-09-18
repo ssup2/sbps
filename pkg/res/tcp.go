@@ -90,16 +90,14 @@ func (res *TCP) IsOpen() bool {
 func (res *TCP) IsRable() bool {
 	if res.mode&(1<<ModeR) == (1 << ModeR) {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
 
 // IsWable check resource is writeable
 func (res *TCP) IsWable() bool {
 	if res.mode&(1<<ModeW) == (1 << ModeW) {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
