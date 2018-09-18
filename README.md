@@ -1,5 +1,7 @@
 # sbps
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/ssup2/sbps)](https://goreportcard.com/report/github.com/ssup2/sbps)
+
 sbps (Simple Broadcast Proxy Server) is the broadcast proxy server between servers and clients.
 
 ![sbps architecture](img/sbps_architecture.PNG)
